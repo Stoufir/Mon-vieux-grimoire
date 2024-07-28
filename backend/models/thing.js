@@ -1,6 +1,17 @@
 const mongoose = require('mongoose');
 
-const thingSchema = mongoose.Schema({
+const ratingSchema = new mongoose.Schema({
+  userId: {
+    type: String,
+    required: true
+  },
+  grade: {
+    type: Number,
+    required: true
+  }
+});
+
+const thingSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true
@@ -21,16 +32,12 @@ const thingSchema = mongoose.Schema({
     type: String,
     required: true
   },
-  ratings: {
-    type:Number,
-    required: true,
-    min: 0,
-    max: 5
-  },
+  ratings: [ratingSchema],
   averageRating: {
     type: Number,
     default: 0
   }
 });
+
 
 module.exports = mongoose.model('Thing', thingSchema);
