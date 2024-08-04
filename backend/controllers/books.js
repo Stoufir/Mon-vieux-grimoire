@@ -1,46 +1,40 @@
-const Thing = require('../models/thing');
+const Book = require('../models/book');
 
-exports.createThing = (req, res, next) => {
-  console.log("Request body:", req.body); // Log pour vérifier le contenu de req.body
-
-  delete req.body._id;
-
-  const thing = new Thing({
-    ...req.body
+exports.createBook = (req, res, next) => {
+  const bookObject = JSON.parse(req.body.book);
+  delete bookObject._id;
+  delete bookObject._userId;
+  const book = new Book({
+      ...bookObject,
+      userId: req.auth.userId,
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   });
-
-  thing.save()
-    .then(() => {
-      console.log("Objet enregistré avec succès !");
-      res.status(201).json({ message: 'Objet enregistré !' });
-    })
-    .catch(error => {
-      console.error("Erreur lors de l'enregistrement de l'objet:", error);
-      res.status(400).json({ error });
-    });
+  book.save()
+  .then(() => { res.status(201).json({message: 'Objet enregistré !'})})
+  .catch(error => { res.status(400).json( { error })})
 };
 
-
+  exports.getOneBook = (req, res, next) => {
+    Book.findOne({ _id: req.params.id })
+      .then((book) => res.status(200).json(book))
+      .catch((error) => res.status(400).json({ error }));
+  };
+  
   exports.modifyThing = (req, res, next) => {
-    Thing.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id })
+    Book.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id })
       .then(() => res.status(200).json({ message: 'Objet modifié !'}))
       .catch(error => res.status(400).json({ error }));
   };
 
   exports.getAllBooks =  (req, res, next) => {
-    Thing.find()
+    Book.find()
       .then(things => res.status(200).json(things))
       .catch(error => res.status(400).json({ error }));
   };
 
   exports.deleteThing =  (req, res, next) => {
-    Thing.deleteOne({ _id: req.params.id })
+    Book.deleteOne({ _id: req.params.id })
       .then(() => res.status(200).json({ message: 'Objet supprimé !'}))
       .catch(error => res.status(400).json({ error }));
   }; 
 
-  exports.getOneThing = (req, res, next) => {
-    Thing.findOne ({ _id: req.params.id })
-    .then((thing) => { res.status(200).json(thing)})
-    .catch ((error) => { res.status(404).json({ error })})
-  };

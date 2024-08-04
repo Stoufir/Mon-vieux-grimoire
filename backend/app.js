@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const path = require('path');
 
 app.use(express.json());
 
@@ -22,5 +23,6 @@ app.use((req, res, next) => {
 
 app.use('/api/books', booksRoutes);
 app.use('/api/auth', userRoutes);
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 module.exports = app;
