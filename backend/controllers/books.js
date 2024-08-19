@@ -1,19 +1,37 @@
 const Book = require('../models/book');
 const fs = require('fs');
+const sharp = require('sharp');
+const path = require('path');
 
 // Création d'un livre
-exports.createBook = (req, res, next) => {
-  const bookObject = JSON.parse(req.body.book);
-  delete bookObject._id;
-  delete bookObject._userId;
-  const book = new Book({
-      ...bookObject,
-      userId: req.auth.userId,
-      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-  });
-  book.save()
-  .then(() => { res.status(201).json({message: 'Objet enregistré !'})})
-  .catch(error => { res.status(400).json( { error })})
+exports.createBook = async (req, res, next) => {
+  try {
+      const bookObject = JSON.parse(req.body.book);
+      delete bookObject._id;
+      delete bookObject._userId;
+
+
+      const filename = `${Date.now()}-${req.file.originalname.split('.')[0]}.jpg`;
+      const outputPath = path.join('images', filename);
+
+
+      await sharp(req.file.buffer)
+          .resize(800) 
+          .jpeg({ quality: 80 }) 
+          .toFile(outputPath);
+
+      const book = new Book({
+          ...bookObject,
+          userId: req.auth.userId,
+          imageUrl: `${req.protocol}://${req.get('host')}/images/${filename}`
+      });
+
+      await book.save();
+      res.status(201).json({ message: 'Objet enregistré et image optimisée!' });
+
+  } catch (error) {
+      res.status(400).json({ error });
+  }
 };
 
 // Récupération d'un livre 
@@ -59,9 +77,6 @@ exports.getOneBook = (req, res, next) => {
 
 
 exports.getBestrating = (req, res, next) => {
-  console.log('Requête reçue pour obtenir les meilleurs livres');
-  console.log('Params:', req.params);  // Ajoutez ceci pour vérifier les paramètres
-
   Book.find()
       .sort({ averageRating: -1 })
       .limit(3)
@@ -75,20 +90,11 @@ exports.getBestrating = (req, res, next) => {
 exports.createRating = (req, res, next) => {
 	Book.findOne({ _id: req.params.id })
 		.then(book => {
-			// On vient vérifier si un rating existe pour le user connecté, si c'est le cas, on le stocke dans
-			// une variable
 			const hasAlreadyVoted = book.ratings.find(rating => rating.userId === req.auth.userId);
-
-			// Notre condition nous dit que si on a null, undefined, 0 ou false, on passe
-			// ce qui veut dire que si on a trouvé aucun rating pour un user, il ou elle peut voter.
 			if (!hasAlreadyVoted) {
 				book.ratings.push({ userId: req.auth.userId, grade: req.body.rating });
 
 				const ratings = book.ratings.map(rating => rating.grade);
-
-				// On vient calculer notre moyenne avec la méthode reduce pour faire la somme
-				// de toutes les notes et on la divise par la taille de notre tableau.
-				// On utilise la méthode toFixed() pour arrondir à une décimale après la virgule.
 				let averageRating =
 					ratings.reduce((previous, current) => {
 						return previous + current;

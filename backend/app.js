@@ -9,7 +9,6 @@ const userRoutes = require('./routes/user');
 
 app.use(express.json());
 
-// Connexion à MongoDB en utilisant la variable d'environnement
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connexion à MongoDB réussie !'))
   .catch(() => console.log('Connexion à MongoDB échouée !'));
